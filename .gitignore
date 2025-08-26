@@ -176,7 +176,7 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 # Additional Folders to be ignored
-notebooks/
+notebooks_ignore/
 papers/
 ref (should be deleted)/
 src/
