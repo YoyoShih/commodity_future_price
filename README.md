@@ -31,11 +31,21 @@ This project implements:
 
 ## 🔹 Results (Example)
 
-Using a rolling-window backtest (3 years training → 1 months prediction):  
+Using a rolling-window backtest (3 years training → 1 months prediction) and applying Stein estimators and Diagonal Shrinkage regression:  
 
-- **OLS Sharpe Ratio**: 1.228  
-- **Diagonal Shrinkage Sharpe Ratio**: **1.346 (+0.118 improvement)**  
-- Stein estimator exhibited higher variance but provided robustness in certain regimes.  
+Mean Square Error of Prediction (over each commodity)
+- OLS Sharpe Ratio: mean 0.0261, std 0.0519 (over each year)  
+- **Stein**: **mean 0.0183, std 0.0348**
+- **Diagonal Shrinkage**: **mean 0.0186, std 0.0366**   
+
+---
+
+## 🔹 Future Improvement
+
+While there has been some initial results achieved, obviously there are still many things to do, including but not limit to:
+- Data issue: Adding more commodity futures data; Data correctness issue solving; Try other index or other target's futures
+- Model: Try GLM instead of MLS
+- Strategy: Considering more complex trading strategies
 
 ---
 
