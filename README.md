@@ -23,9 +23,11 @@ This project implements:
 
 - Translated the original **R implementations** into **Python**.  
 - Verified correctness against the R version on toy datasets.  
-- Applied these methods to a **dataset of 35 commodity futures**, predicting future returns.  
-- Constructed **long-short portfolios** based on predicted returns.  
-- Compared shrinkage estimators against **OLS** in terms of **out-of-sample RMSE** and **Sharpe ratio**.  
+- Applied these methods to a **dataset of 35 commodity futures**, predicting future returns.   
+- Compared shrinkage estimators against **OLS** in terms of **out-of-sample MSE**.  
+
+Currently doing:
+- Constructed **long-short portfolios** based on predicted returns. 
 
 ---
 
@@ -35,8 +37,8 @@ Using a rolling-window backtest (3 years training → 1 months prediction) and a
 
 Mean Square Error of Prediction (over each commodity)
 - OLS Sharpe Ratio: mean 0.0261, std 0.0519 (over each year)  
-- **Stein**: **mean 0.0183, std 0.0348**
-- **Diagonal Shrinkage**: **mean 0.0186, std 0.0366**   
+- **Stein**: **mean 0.0183, std 0.0348 (over each year)**
+- **Diagonal Shrinkage**: **mean 0.0186, std 0.0366 (over each year)**   
 
 ---
 
