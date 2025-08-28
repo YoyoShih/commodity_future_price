@@ -44,14 +44,21 @@ MSE of Prediction (over each commodity)
 - **Stein**: **mean 0.0183, std 0.0348 (over each year)**
 - **Diagonal Shrinkage**: **mean 0.0186, std 0.0366 (over each year)** 
 
+Both shrinkage methods lead to lower mean and std of MSE, while Diagonal Shrinkage is with slightly higher value on both measure.
+
 ### Long-short Portfolio
 
 To backtest a long-short portfolio based on the prediction of return, we now introduced second-nearby contract data to bring us more close to reality.
 
-Sharpe Ratio
-- OLS: 2.8523
-- Stein: 2.7349
-- **Diagonal Shrinkage**: **3.0752**
+Annualized Return & Sharpe Ratio
+- OLS: 32.23% / 2.8523
+- Stein: 30.85% / 2.7349
+- **Diagonal Shrinkage**: **31.67% / 3.0752**
+
+We could see that although Stein is with lower mean and std than OLS, the annualized return and sharpe ratio is lower than OLS.  
+On the other hand, DSh leads to a higher sharpe ratio despite of slightly lower return. Surely it is because of DSh is more stable as a regression method than OLS is.  
+Stein, also a shrinkage method though, views all covariates equally reliable, which is too simple in reality, especially when dimension is not very low.  
+DSh, comparing to Stein, consider the volatility of each covariates and with more power of shrinkage when it higher volatile and vice versa.  It therefore performs better than Stein.
 
 ---
 
