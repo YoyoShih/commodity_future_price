@@ -33,12 +33,21 @@ Currently doing:
 
 ## 🔹 Results (Example)
 
-Using a rolling-window backtest (3 years training → 1 months prediction) and applying Stein estimators and Diagonal Shrinkage regression:  
+Using a rolling-window backtest (3 years training → 1 months prediction) and applying Stein estimators and Diagonal Shrinkage regression.  
+
+Note that for simplicity, here we only consider front-month contract (cc1).
 
 Mean Square Error of Prediction (over each commodity)
-- OLS Sharpe Ratio: mean 0.0261, std 0.0519 (over each year)  
+- OLS: mean 0.0261, std 0.0519 (over each year)  
 - **Stein**: **mean 0.0183, std 0.0348 (over each year)**
-- **Diagonal Shrinkage**: **mean 0.0186, std 0.0366 (over each year)**   
+- **Diagonal Shrinkage**: **mean 0.0186, std 0.0366 (over each year)** 
+
+To backtest a long-short portfolio based on the prediction of return, we now introduced second-nearby contract data to bring us more close to reality.
+
+Long-short Portfolio's Sharpe Ratio
+- OLS: 2.8523
+- Stein: 2.7349
+- **Diagonal Shrinkage**: **3.0752**
 
 ---
 
