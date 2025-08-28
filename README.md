@@ -28,7 +28,8 @@ This project implements:
 - Constructed **long-short portfolios** based on predicted returns.
 
 Currently doing:
- 
+- Considering liquidity constraint since some commodity contracts could not be shorted easily
+- Applying shrinkage to GLM
 
 ---
 
@@ -65,7 +66,7 @@ DSh, comparing to Stein, consider the volatility of each covariates and with mor
 ## 🔹 Future Improvement
 
 While there has been some initial results achieved, obviously there are still many things to do, including but not limit to:
-- Data issue: Adding more commodity futures data; Data correctness issue solving; Try other index or other target's futures
+- Data issue: Adding more commodity futures data; Try other index or other target's futures
 - Model: Try GLM instead of MLS
 - Strategy: Considering more complex trading strategies
 
