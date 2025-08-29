@@ -13,9 +13,12 @@ This project implements:
 
 - **Stein Estimator (St)**  
 - **Diagonal Shrinkage (DSh)**  
+- **Shrinkage Estimator**
 - **Linear Shrinkage (LSh)**  
 - **Slab Regression (SR, GSR)**  
 - **Shrinkage Ridge Regression (SRR)**  
+
+Note that although all of the methods described are shrinkage estimators, "Shrinkage Estimator" (capital S) is a specific type of shrinkage method mentioned in Theorem 1. (iii), denoted as *Sh*, in the reference paper.
 
 ---
 
@@ -37,29 +40,37 @@ Currently doing:
 
 ### Mean Square Error of Prediction
 
-Using a rolling-window backtest (3 years training → 1 months prediction) and applying Stein estimators and Diagonal Shrinkage regression.  
+Using a rolling-window backtest (3 years training → 3 months prediction) and applying Stein estimators and Diagonal Shrinkage regression.  
 Note that for simplicity, here we only consider front-month contract (cc1).
 
 MSE of Prediction (over each commodity)
-- OLS: mean 0.0261, std 0.0519 (over each year)  
-- **Stein**: **mean 0.0183, std 0.0348 (over each year)**
-- **Diagonal Shrinkage**: **mean 0.0186, std 0.0366 (over each year)** 
+- OLS: mean 0.0374, std 0.0493 (over each year)  
+- **Stein**: **mean 0.0240, std 0.0283 (over each year)**
+- **Diagonal Shrinkage**: **mean 0.0233, std 0.0288 (over each year)** 
+- **Shrinkage Estimator**: **mean 0.0111, std 0.0095(over each year)**
+- **Linear Shrinkage**: **mean 0.0279, std 0.0314(over each year)**
+- **Slab**: **mean 0.0325, std 0.0357(over each year)**
+- Generalized Slab: mean 0.3327, std 1.2484(over each year)
+- **Shrinkage Ridge**: **mean 0.0269, std 0.0327(over each year)**
 
-Both shrinkage methods lead to lower mean and std of MSE, while Diagonal Shrinkage is with slightly higher value on both measure.
+We could see that all shrinkage method except GSR perform better than OLS, while Shrinkage estimator is the best, then Stein and Diagonal Shrinkage, then Linear Shrinkage, then Slab.  
 
 ### Long-short Portfolio
 
 To backtest a long-short portfolio based on the prediction of return, we now introduced second-nearby contract data to bring us more close to reality.
 
 Annualized Return & Sharpe Ratio
-- OLS: 32.23% / 2.8523
-- Stein: 30.85% / 2.7349
-- **Diagonal Shrinkage**: **31.67% / 3.0752**
+- OLS: 3.73% / 0.5227
+- Stein: 4.45% / 0.5506
+- **Diagonal Shrinkage**: **5.88% / 0.7886**
+- Shrinkage Estimator: 4.02% / 0.3806
+- Slab Shrinkage: 3.87% / 0.5318
+- Generalized Slab: 4.19% / 0.5863
+- Linear Shrinkage: 4.67% / 0.6096
+- **Shrinkage Ridge**: **5.43% / 0.7081**
 
-We could see that although Stein is with lower mean and std than OLS, the annualized return and sharpe ratio is lower than OLS.  
-On the other hand, DSh leads to a higher sharpe ratio despite of slightly lower return. Surely it is because of DSh is more stable as a regression method than OLS is.  
-Stein, also a shrinkage method though, views all covariates equally reliable, which is too simple in reality, especially when dimension is not very low.  
-DSh, comparing to Stein, consider the volatility of each covariates and with more power of shrinkage when it higher volatile and vice versa.  It therefore performs better than Stein.
+We could see that all shrinkage methods are with higher return than OLS, where Diagonal Shrinkage and Shrinkage Ridge Regression are the top-2 models.  
+Notice that Shrinkage estimator's sharpe ratio is notably lower than OLS in spite of higher annualized return, which implies a far higher standard deviation of returns. 
 
 ---
 

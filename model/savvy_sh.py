@@ -188,4 +188,5 @@ class SavvySh:
                 preds[key] = X @ coef.flatten()
             else:
                 preds[key] = X_tilde @ coef.flatten()
+        
         return preds
