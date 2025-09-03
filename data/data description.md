@@ -1,5 +1,6 @@
 # Data Description
-## Data Provided from Professor
+## Commodity Futures Data
+### Data Provided from Professor
 There are 35 commodities future price data in the "raw" folder.  
 Each commodity is as follows (all are of contunuous contract 1):  
 - BO: US Soybean Oil
@@ -40,7 +41,7 @@ Each commodity is as follows (all are of contunuous contract 1):
 
 Note that in LB dataset, the prices are constant since 2023-05-31, which is incorrect.
 
-## Further Dataset
+### Further Dataset
 To build and test my strategies of simple long-short, we need the data of second continuous monthly data for each commodity, which were downloaded from investing.com.  
 Notice that for some commodities (shown below) I couldn't get this kind of data, so we will ignore them when constructing protfolio:  
 - JN: TOCOM Rubber
@@ -50,5 +51,9 @@ Notice that for some commodities (shown below) I couldn't get this kind of data,
 - LT: London Tin
 - LX: London Zinc
 
-## Conclusion Note
+### Conclusion Note
 Based on the above finding, for rolling window testing the prediction power of shrinkage regression, all dataset except LB would be used, while for long-short strategies backtesting, 5 datasets would be further excluded, ie JN, LL, LN, LT, LX.
+
+## Stocks
+### Downloaded from yfinance
+Using Yahoo! Finance Python API to download stock data. See [\[link\]](https://ranaroussi.github.io/yfinance/index.html) for more information.

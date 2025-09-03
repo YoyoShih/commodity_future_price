@@ -181,3 +181,6 @@ papers/
 ref (should be deleted)/
 src/
 temp_data/
+
+# Additional Files to be ignored
+API_KEY.txt
