@@ -24,6 +24,20 @@ class SavvySh:
         self.coef_ = {}
 
     def fit(self, X, y):
+        """
+        Fit the model to the data.
+
+        Parameters
+        ----------
+        X : array-like
+            The input features.
+        y : array-like
+            The target variable.
+        
+        Returns
+        -------
+        None
+        """
         if X.shape[0] != len(y):
             raise ValueError("Incompatible shapes: X has {} rows, y has {} rows".format(X.shape[0], len(y)))
         if np.any(np.isnan(X)) or np.any(np.isnan(y)):
@@ -144,7 +158,7 @@ class SavvySh:
 
         self.fitted_ = True
 
-    def predict(self, X, estimator=None):
+    def predict(self, X, estimator=None) -> dict | np.ndarray:
         """
         Predict response values using the fitted model.
 
