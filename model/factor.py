@@ -26,6 +26,7 @@ class Factor:
         start = self.index[0]
         end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
         annualized_risk_free_rate = yf.download("^IRX", auto_adjust=True, start=start, end=end)["Close"]
+        # Turn annualized risk-free rate into daily
         daily_risk_free_rate = annualized_risk_free_rate.apply(lambda x: (1 + x / 100) ** (1 / 365) - 1)
         return daily_risk_free_rate
 
@@ -51,14 +52,17 @@ class Factor:
         -------
         None
         """
+        # Calculate the return
         ret = (self.data['Close'].shift(ex_curr) - self.data['Close'].shift(window)) / self.data['Close'].shift(window)
         
         if excess:
             if risk_free_rate is None:
                 risk_free_rate = self.get_risk_free_rate()
+            # Turn return to excess return
             ret = ret - risk_free_rate["^IRX"]
         
         if vol_adj:
+            # Adjust for volatility
             sigma = self.daily_ret.shift(ex_curr).rolling(window - ex_curr).std()
             self.data['MOM_vol_adj'] = ret / sigma
         else:
@@ -81,7 +85,7 @@ class Factor:
         None
         """
         if method == 'base':
-            self.data['skewness'] = self.daily_ret.rolling(window).apply(lambda x: pd.Series(x).skew(), raw=False)
+            self.data['Skewness'] = self.daily_ret.rolling(window).apply(lambda x: pd.Series(x).skew(), raw=False)
         elif method == 'opt_implied':
             print("Option implied skewness calculation not implemented yet.")
         elif method == 'opt_proxy':
@@ -146,9 +150,12 @@ class Factor:
         """
         start = self.index[0]
         end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
+        # Download outstanding shares
         os_shares = yf.Ticker(self.ticker).get_shares_full(start=start, end=end)
         os_shares.index = os_shares.index.date
+        # Remove duplicates (keep the last one)
         os_shares = os_shares[~os_shares.index.duplicated(keep='last')]
+        # Forward fill missing values to align the index
         os_shares = os_shares.reindex(self.data.index, method='ffill')
         self.data['Op_Int'] = self.data["Volume"] / os_shares
 
@@ -170,15 +177,20 @@ class Factor:
         None
         """
         if method == 'B/M':
+            # Read the balance sheet data
             BS = pd.read_csv(f'../../data/alphavantage/{self.ticker}_balance_sheet.csv', index_col='fiscalDateEnding', parse_dates=True)
+            # Reverse and reindex to align to the data
             Equity = BS['totalShareholderEquity'][::-1]
             Equity = Equity.reindex(self.data.index, method='ffill')
 
             start = self.index[0]
             end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
+            # Download outstanding shares
             os_shares = yf.Ticker(self.ticker).get_shares_full(start=start, end=end)
             os_shares.index = os_shares.index.date
+            # Remove duplicates (keep the last one)
             os_shares = os_shares[~os_shares.index.duplicated(keep='last')]
+            # Forward fill missing values to align the index
             os_shares = os_shares.reindex(self.data.index, method='ffill')
 
             self.data['Value_BM'] = (Equity / os_shares) / self.data['Close']
@@ -202,10 +214,15 @@ class Factor:
         None
         """
         if method == 'base':
+            # Read the CPI data
             CPI = pd.read_csv('../../data/alphavantage/CPI.csv', index_col='date', parse_dates=True)[::-1]
+            # Truncate to the relevant date range
             CPI = CPI.loc[self.index[0]:self.index[-1]]
+            # Align the data index to CPI by nearest date
             month_data = self.data['Close'].reindex(CPI.index, method='nearest')
+            # Calculate inflation beta
             inflation_beta = self.rolling_regression(month_data.pct_change(fill_method=None), CPI.pct_change(), window)
+            # Re-align the index back
             self.data['Inflation_Beta'] = inflation_beta.reindex(self.data.index, method='ffill')
 
     def rolling_regression(self, X, y, window):
