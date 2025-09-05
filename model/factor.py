@@ -12,7 +12,7 @@ class Factor:
         self.data = data
         self.index = data.index
         self.ticker = ticker
-        self.daily_ret = data['Close'].pct_change()
+        self.daily_ret = data['Close'].pct_change() # from ytd to tdy
 
     def get_risk_free_rate(self):
         """
@@ -30,7 +30,7 @@ class Factor:
         daily_risk_free_rate = annualized_risk_free_rate.apply(lambda x: (1 + x / 100) ** (1 / 365) - 1)
         return daily_risk_free_rate
 
-    def add_momentum(self, window=252, ex_curr=0, vol_adj=True, excess=False, risk_free_rate=None):
+    def add_momentum(self, window=10, ex_curr=0, vol_adj=True, excess=False, risk_free_rate=None):
         """
         Adds momentum factor to the data.
 
@@ -52,7 +52,7 @@ class Factor:
         -------
         None
         """
-        # Calculate the return
+        # Calculate the return from years ago, excluding [ex_curr] days return
         ret = (self.data['Close'].shift(ex_curr) - self.data['Close'].shift(window)) / self.data['Close'].shift(window)
         
         if excess:
@@ -68,7 +68,7 @@ class Factor:
         else:
             self.data['MOM'] = ret
 
-    def add_skewness(self, window=252, method='base'):
+    def add_skewness(self, window=63, method='base'):
         """
         Adds skewness factor to the data.
 
@@ -115,7 +115,7 @@ class Factor:
             #         default=None
             #     ))
 
-    def add_Volatility(self, window=252, method='base'):
+    def add_Volatility(self, window=63, method='base'):
         """
         Adds volatility factor to the data.
 
@@ -153,10 +153,13 @@ class Factor:
         # Download outstanding shares
         os_shares = yf.Ticker(self.ticker).get_shares_full(start=start, end=end)
         os_shares.index = os_shares.index.date
+        # Times the shares before 2020/08/31 by 4 for stock splits
+        os_shares.loc[os_shares.index < datetime.date(2020, 9, 1)] *= 4
         # Remove duplicates (keep the last one)
         os_shares = os_shares[~os_shares.index.duplicated(keep='last')]
         # Forward fill missing values to align the index
         os_shares = os_shares.reindex(self.data.index, method='ffill')
+
         self.data['Op_Int'] = self.data["Volume"] / os_shares
 
     def add_Value(self, method='B/M'):
@@ -188,6 +191,8 @@ class Factor:
             # Download outstanding shares
             os_shares = yf.Ticker(self.ticker).get_shares_full(start=start, end=end)
             os_shares.index = os_shares.index.date
+            # Times the shares before 2020/08/31 by 4 for stock splits
+            os_shares.loc[os_shares.index < datetime.date(2020, 9, 1)] *= 4
             # Remove duplicates (keep the last one)
             os_shares = os_shares[~os_shares.index.duplicated(keep='last')]
             # Forward fill missing values to align the index
@@ -196,63 +201,3 @@ class Factor:
             self.data['Value_BM'] = (Equity / os_shares) / self.data['Close']
         # elif method == 'E/P':
         #     self.data['Value_EP'] = self.data['Earnings'] / self.data['Price']
-
-    def add_inflation_beta(self, window=60, method='base'):
-        """
-        Adds inflation beta factor to the data.
-
-        Parameters
-        ----------
-        window : int
-            The window size for calculating inflation beta.
-            Default to be 3 years.
-        method : str = ['base']
-            The method to use for calculating inflation beta.
-
-        Returns
-        -------
-        None
-        """
-        if method == 'base':
-            # Read the CPI data
-            CPI = pd.read_csv('../../data/alphavantage/CPI.csv', index_col='date', parse_dates=True)[::-1]
-            # Truncate to the relevant date range
-            CPI = CPI.loc[self.index[0]:self.index[-1]]
-            # Align the data index to CPI by nearest date
-            month_data = self.data['Close'].reindex(CPI.index, method='nearest')
-            # Calculate inflation beta
-            inflation_beta = self.rolling_regression(month_data.pct_change(fill_method=None), CPI.pct_change(), window)
-            # Re-align the index back
-            self.data['Inflation_Beta'] = inflation_beta.reindex(self.data.index, method='ffill')
-
-    def rolling_regression(self, X, y, window):
-        """
-        Performs rolling regression on the given data.
-
-        Parameters
-        ----------
-        X : pd.Series
-            The independent variable.
-        y : pd.Series
-            The dependent variable.
-        window : int
-            The window size for the rolling regression.
-
-        Returns
-        -------
-        pd.Series
-            The rolling regression coefficients.
-        """
-        # Create a DataFrame to hold the results
-        results = pd.Series(index=X.index)
-        X = X.dropna()
-        y = y.dropna()
-
-        # Perform rolling regression
-        for i in range(window, len(X)):
-            X_window = X[i-window:i]
-            y_window = y[i-window:i]
-            model = LinearRegression().fit(X_window.values.reshape(-1, 1), y_window)
-            results.iloc[i] = model.coef_[0]
-
-        return results
