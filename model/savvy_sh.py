@@ -22,6 +22,7 @@ class SavvySh:
         self.ridge_results = None
         self.fitted_ = False
         self.coef_ = {}
+        self.intercept_ = {}
 
     def fit(self, X, y):
         """
@@ -97,16 +98,19 @@ class SavvySh:
             if self.model_class == "Multiplicative":
                 est_St = stein_estimator(est, sigma_square, Sigma_lambda_inv)
                 est_DSh = diagonal_shrinkage_estimator(est, sigma_square, Sigma_lambda_inv)
-                self.coef_ = {"St": est_St, "DSh": est_DSh}
+                self.coef_ = {"St": est_St[1:], "DSh": est_DSh[1:]}
+                self.intercept_ = {"St": est_St[0], "DSh": est_DSh[0]}
                 if self.include_Sh:
                     est_Sh = shrinkage_estimator(est, sigma_square, Sigma_lambda_inv)
-                    self.coef_["Sh"] = est_Sh
+                    self.coef_["Sh"] = est_Sh[1:]
+                    self.intercept_["Sh"] = est_Sh[0]
                 # print("Successfully fitted Multiplicative model")
             # Slab
             elif self.model_class == "Slab":
                 est_SR = slab_estimator(self.v, est, sigma_square, Sigma_lambda, Sigma_lambda_inv)
                 est_GSR = general_slab_regression(est, sigma_square, Sigma_lambda, Sigma_lambda_inv)
-                self.coef_ = {"SR": est_SR, "GSR": est_GSR}
+                self.coef_ = {"SR": est_SR[1:], "GSR": est_GSR[1:]}
+                self.intercept_ = {"SR": est_SR[0], "GSR": est_GSR[0]}
                 # print("Successfully fitted Slab model")
         # Linear
         elif self.model_class == "Linear":
@@ -144,13 +148,15 @@ class SavvySh:
 
             est_LSh = linear_shrinkage(est, sigma_square, Sigma_lambda, Sigma_lambda_inv, Sigma_tilde)
             self.coef_ = {"LSh": est_LSh}
+            self.intercept_ = {"LSh": 0}
             # print("Successfully fitted Linear model")
         # Shrinkage Ridge Regression
         elif self.model_class == "ShrinkageRR":
             Sigma_lambda = x_tilde.T @ x_tilde
 
             est_SRR = shrinkage_ridge_regression(x_tilde, y, Sigma_lambda)
-            self.coef_ = {"SRR": est_SRR}
+            self.coef_ = {"SRR": est_SRR[1:]}
+            self.intercept_ = {"SRR": est_SRR[0]}
             # print("Successfully fitted Shrinkage Ridge model")
 
         if not full_rank and self.model_class != "ShrinkageRR":
@@ -194,13 +200,13 @@ class SavvySh:
             if estimator == "LSh":
                 return X @ self.coef_[estimator].flatten()
             else:
-                return X_tilde @ self.coef_[estimator].flatten()
+                return X_tilde @ np.concatenate(([self.intercept_[estimator]], self.coef_[estimator])).flatten()
 
         preds = {}
         for key, coef in self.coef_.items():
             if key == "LSh":
                 preds[key] = X @ coef.flatten()
             else:
-                preds[key] = X_tilde @ coef.flatten()
-        
+                preds[key] = X_tilde @ np.concatenate(([self.intercept_[key]], coef)).flatten()
+
         return preds
