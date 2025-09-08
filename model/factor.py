@@ -23,12 +23,19 @@ class Factor:
         float
             The risk-free rate.
         """
-        start = self.index[0]
-        end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
-        annualized_risk_free_rate = yf.download("^IRX", auto_adjust=True, start=start, end=end)["Close"]
-        # Turn annualized risk-free rate into daily
-        daily_risk_free_rate = annualized_risk_free_rate.apply(lambda x: (1 + x / 100) ** (1 / 365) - 1)
-        return daily_risk_free_rate
+        # search for the IRX.csv first in the data folder
+        irx_path = f"data/yfinance/IRX.csv"
+        if os.path.exists(irx_path):
+            irx_data = pd.read_csv(irx_path, index_col=0, parse_dates=True)
+            return irx_data
+        else:
+            start = self.index[0]
+            end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
+            annualized_risk_free_rate = yf.download("^IRX", auto_adjust=True, start=start, end=end)["Close"]
+            # Turn annualized risk-free rate into daily
+            daily_risk_free_rate = annualized_risk_free_rate.apply(lambda x: (1 + x / 100) ** (1 / 365) - 1)
+            daily_risk_free_rate.to_csv(irx_path)
+            return daily_risk_free_rate
 
     def add_momentum(self, window=10, ex_curr=0, vol_adj=True, excess=False, risk_free_rate=None):
         """
@@ -115,7 +122,7 @@ class Factor:
             #         default=None
             #     ))
 
-    def add_Volatility(self, window=63, method='base'):
+    def add_volatility(self, window=63, method='base'):
         """
         Adds volatility factor to the data.
 
@@ -135,14 +142,14 @@ class Factor:
         elif method == 'normalized':
             self.data['Volatility'] = self.daily_ret.rolling(window=window).std() / self.daily_ret.rolling(window=window).mean()
 
-    def add_Open_Interest(self, method='base'):
+    def add_liquidity(self, method='base'):
         """
-        Adds open interest factor to the data.
+        Adds liquidity factor to the data.
 
         Parameters
         ----------
         method : str = ['base']
-            The method to use for calculating open interest.
+            The method to use for calculating liquidity.
 
         Returns
         -------
@@ -152,17 +159,26 @@ class Factor:
         end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
         # Download outstanding shares
         os_shares = yf.Ticker(self.ticker).get_shares_full(start=start, end=end)
+        os_shares = os_shares.astype(float)
         os_shares.index = os_shares.index.date
-        # Times the shares before 2020/08/31 by 4 for stock splits
-        os_shares.loc[os_shares.index < datetime.date(2020, 9, 1)] *= 4
+        # Take the dates that with non-zero value at column "Stock Splits"
+        splits_dates = self.data[self.data['Stock Splits'] != 0].index
+        for date in splits_dates:
+            # Convert date to datetime.date if needed
+            if isinstance(date, pd.Timestamp):
+                date_obj = date.date()
+            else:
+                date_obj = date
+            # Adjust outstanding shares for all dates before and including the split date
+            os_shares.loc[os_shares.index <= date_obj] *= self.data.loc[date]['Stock Splits']
         # Remove duplicates (keep the last one)
         os_shares = os_shares[~os_shares.index.duplicated(keep='last')]
         # Forward fill missing values to align the index
         os_shares = os_shares.reindex(self.data.index, method='ffill')
 
-        self.data['Op_Int'] = self.data["Volume"] / os_shares
+        self.data['Liquidity'] = self.data["Volume"] / os_shares
 
-    def add_Value(self, method='B/M'):
+    def add_value(self, method='B/M'):
         """
         Adds value factor to the data.
 
@@ -190,9 +206,18 @@ class Factor:
             end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
             # Download outstanding shares
             os_shares = yf.Ticker(self.ticker).get_shares_full(start=start, end=end)
+            os_shares = os_shares.astype(float)
             os_shares.index = os_shares.index.date
-            # Times the shares before 2020/08/31 by 4 for stock splits
-            os_shares.loc[os_shares.index < datetime.date(2020, 9, 1)] *= 4
+            # Take the dates that with non-zero value at column "Stock Splits"
+            splits_dates = self.data[self.data['Stock Splits'] != 0].index
+            for date in splits_dates:
+                # Convert date to datetime.date if needed
+                if isinstance(date, pd.Timestamp):
+                    date_obj = date.date()
+                else:
+                    date_obj = date
+                # Adjust outstanding shares for all dates before and including the split date
+                os_shares.loc[os_shares.index <= date_obj] *= self.data.loc[date]['Stock Splits']
             # Remove duplicates (keep the last one)
             os_shares = os_shares[~os_shares.index.duplicated(keep='last')]
             # Forward fill missing values to align the index
@@ -201,3 +226,41 @@ class Factor:
             self.data['Value_BM'] = (Equity / os_shares) / self.data['Close']
         # elif method == 'E/P':
         #     self.data['Value_EP'] = self.data['Earnings'] / self.data['Price']
+
+    def add_market_cap(self, method='base'):
+        """
+        Adds market capitalization factor to the data.
+
+        Parameters
+        ----------
+        method : str = ['base', 'log']
+            The method to use for calculating market capitalization.
+
+        Returns
+        -------
+        None
+        """
+        start = self.index[0]
+        end = pd.Timestamp(self.index[-1]) + pd.Timedelta(days=1)
+        # Download outstanding shares
+        os_shares = yf.Ticker(self.ticker).get_shares_full(start=start, end=end)
+        os_shares = os_shares.astype(float)
+        os_shares.index = os_shares.index.date
+        # Take the dates that with non-zero value at column "Stock Splits"
+        splits_dates = self.data[self.data['Stock Splits'] != 0].index
+        for date in splits_dates:
+            # Convert date to datetime.date if needed
+            if isinstance(date, pd.Timestamp):
+                date_obj = date.date()
+            else:
+                date_obj = date
+            # Adjust outstanding shares for all dates before and including the split date
+            os_shares.loc[os_shares.index <= date_obj] *= self.data.loc[date]['Stock Splits']
+        # Remove duplicates (keep the last one)
+        os_shares = os_shares[~os_shares.index.duplicated(keep='last')]
+        # Forward fill missing values to align the index
+        os_shares = os_shares.reindex(self.data.index, method='ffill')
+        if method == 'base':
+            self.data['Market_Cap'] = self.data['Close'] * os_shares
+        elif method == 'log':
+            self.data['Market_Cap'] = np.log(self.data['Close'] * os_shares)
